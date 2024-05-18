@@ -4,10 +4,14 @@ on:
   push:
     branches:
       - '**'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -19,10 +23,22 @@ jobs:
         run: npm test
       - name: Lint
         run: npm run lint
-      - name: Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages (multi-branch)
+        if: env.GITHUB_PAGES_MULTI_BRANCH == 'true'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./build
           destination_dir: ${{ github.ref_name }}
           allow_empty_commit: true
+      - name: Upload build to GitHub Pages
+        if: env.GITHUB_PAGES_MULTI_BRANCH != 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: stremio-web
+          path: build
+      - name: Deploy build to GitHub Pages (single branch)
+        if: env.GITHUB_PAGES_MULTI_BRANCH != 'true'
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: stremio-web
